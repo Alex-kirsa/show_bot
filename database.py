@@ -1,9 +1,10 @@
 import sqlite3
 from icecream import ic
+from config.settings import DATABASE_CONNECT
 
 class Database:
     def _connect(self):
-        return sqlite3.connect("database.db")
+        return sqlite3.connect(DATABASE_CONNECT)
     
     def _select(self, request:str):
         with self._connect() as con:
