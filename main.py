@@ -22,13 +22,13 @@ import callback_data as cb_data
 
 site_job = Router()
 mailing:Router = Router()
-info_about = Router()
+user_info = Router()
 sheets = Router()
 analysis = Router()
 empty = Router()
 
 dp = Dispatcher()
-dp.include_routers(site_job, mailing, info_about, sheets, analysis, empty)
+dp.include_routers(site_job, mailing, user_info, sheets, analysis, empty)
 
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 
@@ -37,12 +37,11 @@ bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 @dp.message(Command("language"))
 async def command_start_handler(message:Message) -> None:
     db.check_user_in_db(message.from_user.id)
-    lang = db.get_language_by_id(ic(message.from_user.id))
+    lang = db.get_language_by_id(message.from_user.id)
     await message.answer(\
         MESSAGES["START_MESSAGE"][lang],\
         reply_markup=rp_marcups.command_start_marcup())
     return
-
 
 @dp.callback_query(cb_data.ChooseLanguage.filter())
 async def choose_language_callback(query: CallbackQuery, callback_data:cb_data.ChooseLanguage) -> None:
@@ -54,7 +53,6 @@ async def choose_language_callback(query: CallbackQuery, callback_data:cb_data.C
         reply_markup=rp_marcups.chosen_language_marcup(lang))
     return
 
-
 @dp.callback_query(cb_data.MainMenu.filter(F.section=="MAIN_MENU"))
 async def main_menu(query: CallbackQuery, callback_data:cb_data.MainMenu):
     lang = db.get_language_by_id(query.from_user.id)
@@ -64,6 +62,7 @@ async def main_menu(query: CallbackQuery, callback_data:cb_data.MainMenu):
         reply_markup=rp_marcups.main_menu_marcup(lang))
     
 
+
 @site_job.callback_query(cb_data.MainMenu.filter(F.section=="SITE_JOB"))
 async def site_job(query: CallbackQuery, callback_data:cb_data.MainMenu):
     lang = db.get_language_by_id(query.from_user.id)
@@ -71,6 +70,7 @@ async def site_job(query: CallbackQuery, callback_data:cb_data.MainMenu):
     await query.message.answer(\
         text=MESSAGES["MAIN_MENU"]["SITE_JOB"]["PRESS_TO_FILL_THE_FORM"][lang],\
         reply_markup=rp_marcups.site_job_marcup(lang))
+
 
 
 @mailing.callback_query(cb_data.MainMenu.filter(F.section=="MAILING"))
@@ -95,7 +95,6 @@ async def mailing_get_message(message:Message, state:FSMContext):
 
     try:
         if((1<=int(message.text)) and (int(message.text)<=60)):
-            ic("AAA")
             await asyncio.sleep(int(message.text))
             data = await state.get_data()
             await bot.copy_message(\
@@ -112,6 +111,21 @@ async def mailing_get_message(message:Message, state:FSMContext):
             await message.answer(MESSAGES["MAIN_MENU"]["MAILING"]["NUM_IS_NOT_VALID"][lang])
     except:
         await message.answer(MESSAGES["MAIN_MENU"]["MAILING"]["SEND_DELAY"][lang])
+
+
+
+@user_info.callback_query(cb_data.MainMenu.filter(F.section=="USER_INFO"))
+async def user_info_callback(query: CallbackQuery, callback_data:cb_data.MainMenu, state:FSMContext):
+    lang = db.get_language_by_id(query.from_user.id)
+    await query.message.delete()
+    await query.message.answer(\
+        text=MESSAGES["MAIN_MENU"]["USER_INFO"]["ALL_INFO_I_OWE"][lang])
+    l = [el for el in query.from_user]
+    l1 = list()
+    for i in range(len(l)):
+        l1.append(f"{l[i][0]}: {l[i][1]}")
+    await query.message.answer(text="\n".join(l1))
+
 
 
 @empty.message()
