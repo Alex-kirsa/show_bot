@@ -12,6 +12,8 @@ from settings import BOT_TOKEN
 from messages import MESSAGES
 from database import db
 
+import reply_marcups as rp_marcups
+
 
 dp = Dispatcher()
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
@@ -19,15 +21,10 @@ bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
-    lang = db.get_language_by_id(message.from_user.id)
-    await message.answer(MESSAGES["START_MESSAGE"][lang])
-
-
-@dp.message(Command("language"))
-async def command_language_handler(message: Message) -> None:
-    lang = db.get_language_by_id(message.from_user.id)
-
-    await message.answer(MESSAGES["START_MESSAGE"][lang])
+    lang = db.get_language_by_id()
+    await message.answer(
+        MESSAGES["START_MESSAGE"][lang],
+        reply_markup=rp_marcups.command_start_marcup())
 
 
 @dp.message()
