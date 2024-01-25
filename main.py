@@ -9,23 +9,26 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
+from aiogram.fsm.context import FSMContext
 
 from config.settings import BOT_TOKEN
 from messages import MESSAGES
 from database import db
 
+from state_machine import MailingForm
 from reply_marcups import rp_marcups
 import callback_data as cb_data
 
 
 site_job = Router()
-mailing = Router()
+mailing:Router = Router()
 info_about = Router()
 sheets = Router()
 analysis = Router()
+empty = Router()
 
 dp = Dispatcher()
-dp.include_routers(site_job, mailing, info_about, sheets, analysis)
+dp.include_routers(site_job, mailing, info_about, sheets, analysis, empty)
 
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 
@@ -70,10 +73,48 @@ async def site_job(query: CallbackQuery, callback_data:cb_data.MainMenu):
         reply_markup=rp_marcups.site_job_marcup(lang))
 
 
-@mailing.callback_query(cb_data.MainMenu.filter(F.section=="SITE_JOB"))
+@mailing.callback_query(cb_data.MainMenu.filter(F.section=="MAILING"))
+async def choose_mailing(query: CallbackQuery, callback_data:cb_data.MainMenu, state:FSMContext):
+    lang = db.get_language_by_id(query.from_user.id)
+    await query.message.delete()
+    await state.set_state(MailingForm.message)
+    await query.message.answer(\
+        text=MESSAGES["MAIN_MENU"]["MAILING"]["SEND_MESSAGE"][lang])
+    
+@mailing.message(MailingForm.message)
+async def mailing_get_message(message:Message, state:FSMContext):
+    lang = db.get_language_by_id(message.from_user.id)
+    await state.set_data({"message_id": message.message_id})
+    await state.set_state(MailingForm.delay)
+    await message.answer(\
+        text=MESSAGES["MAIN_MENU"]["MAILING"]["SEND_DELAY"][lang])
+    
+@mailing.message(MailingForm.delay)
+async def mailing_get_message(message:Message, state:FSMContext):
+    lang = db.get_language_by_id(message.from_user.id)
+
+    try:
+        if((1<=int(message.text)) and (int(message.text)<=60)):
+            ic("AAA")
+            await asyncio.sleep(int(message.text))
+            data = await state.get_data()
+            await bot.copy_message(\
+                chat_id=message.from_user.id,\
+                from_chat_id=message.from_user.id,\
+                message_id=data["message_id"]\
+            )
+            await message.answer(\
+                MESSAGES["MAIN_MENU"]["MAILING"]["SHOW_RESULT"][lang]%message.text,\
+                reply_markup=rp_marcups.chosen_language_marcup(lang)\
+            )
+            await state.clear()
+        else:
+            await message.answer(MESSAGES["MAIN_MENU"]["MAILING"]["NUM_IS_NOT_VALID"][lang])
+    except:
+        await message.answer(MESSAGES["MAIN_MENU"]["MAILING"]["SEND_DELAY"][lang])
 
 
-@dp.message()
+@empty.message()
 async def echo_handler(message: types.Message) -> None:
     try:
         await message.send_copy(chat_id=message.chat.id)
