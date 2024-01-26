@@ -1,6 +1,9 @@
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 
+from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup
+from aiogram.types.keyboard_button import KeyboardButton
+
 from icecream import ic
 
 from messages import MESSAGES, LANGUAGES
@@ -21,7 +24,9 @@ class ReplyMarcups:
         return InlineKeyboardMarkup(inline_keyboard=[buttons_list])
 
     def chosen_language_marcup(self, lang:str):
-        return InlineKeyboardMarkup(inline_keyboard=[[self._main_menu_button("MAIN_MENU", lang)]])
+        #return InlineKeyboardMarkup(inline_keyboard=[[self._main_menu_button("MAIN_MENU", lang)]])
+        button = KeyboardButton(text=MESSAGES["MAIN_MENU"][lang])
+        return ReplyKeyboardMarkup(keyboard=[[button]], resize_keyboard=True)
         
     def main_menu_marcup(self, lang:str):
         buttons_list = list()
@@ -37,7 +42,7 @@ class ReplyMarcups:
                     url="https://shorturl.at/isBOV",\
                 )
 
-        return InlineKeyboardMarkup(inline_keyboard=[[button], [self._main_menu_button("MAIN_MENU", lang)]])
+        return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
     def _main_menu_button(self, section:str, lang:str):
         if section=="MAIN_MENU":
@@ -49,6 +54,11 @@ class ReplyMarcups:
                     text=text,\
                     callback_data=cb_data.MainMenu(section=section).pack()\
                 )
+    
+    def main_menu_reply_keyboard_marcup_button(self, lang):
+        button = KeyboardButton(text=MESSAGES["MAIN_MENU"][lang])
+
+        return ReplyKeyboardMarkup(keyboard=[[button]])
 
 rp_marcups = ReplyMarcups()
 

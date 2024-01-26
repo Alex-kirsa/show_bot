@@ -54,6 +54,16 @@ async def choose_language_callback(query: CallbackQuery, callback_data:cb_data.C
         reply_markup=rp_marcups.chosen_language_marcup(lang))
     return
 
+@dp.message(F.text==MESSAGES["MAIN_MENU"]["UA"])
+@dp.message(F.text==MESSAGES["MAIN_MENU"]["RU"])
+async def main_memu_message(message:Message):
+    lang = db.get_language_by_id(message.from_user.id)
+    await message.delete()
+    await message.answer(\
+        text=MESSAGES["MAIN_MENU"][lang],\
+        reply_markup=rp_marcups.main_menu_marcup(lang))
+
+
 @dp.callback_query(cb_data.MainMenu.filter(F.section=="MAIN_MENU"))
 async def main_menu(query: CallbackQuery, callback_data:cb_data.MainMenu):
     lang = db.get_language_by_id(query.from_user.id)
