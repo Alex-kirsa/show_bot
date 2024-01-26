@@ -1,5 +1,6 @@
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
+from aiogram.types.web_app_info import WebAppInfo
 
 from aiogram.types.reply_keyboard_markup import ReplyKeyboardMarkup
 from aiogram.types.keyboard_button import KeyboardButton
@@ -39,7 +40,7 @@ class ReplyMarcups:
     def site_job_marcup(self, lang:str):
         button = InlineKeyboardButton(\
                     text=MESSAGES["MAIN_MENU"]["SITE_JOB"]["FILL_THE_FORM"][lang],\
-                    url="https://shorturl.at/isBOV",\
+                    web_app=WebAppInfo(url="https://shorturl.at/isBOV"),\
                 )
 
         return InlineKeyboardMarkup(inline_keyboard=[[button]])
