@@ -20,17 +20,6 @@ class ReplyMarcups:
             
         return InlineKeyboardMarkup(inline_keyboard=[buttons_list])
 
-    def _main_menu_button(self, section:str, lang:str):
-        if section=="MAIN_MENU":
-            text = MESSAGES[section][lang]
-        else:
-            text = MESSAGES["MAIN_MENU"][section][lang]
-
-        return InlineKeyboardButton(\
-                    text=text,\
-                    callback_data=cb_data.MainMenu(section=section).pack()\
-                )
-
     def chosen_language_marcup(self, lang:str):
         return InlineKeyboardMarkup(inline_keyboard=[[self._main_menu_button("MAIN_MENU", lang)]])
         
@@ -49,7 +38,17 @@ class ReplyMarcups:
                 )
 
         return InlineKeyboardMarkup(inline_keyboard=[[button], [self._main_menu_button("MAIN_MENU", lang)]])
-        
+
+    def _main_menu_button(self, section:str, lang:str):
+        if section=="MAIN_MENU":
+            text = MESSAGES[section][lang]
+        else:
+            text = MESSAGES["MAIN_MENU"][section][lang]
+
+        return InlineKeyboardButton(\
+                    text=text,\
+                    callback_data=cb_data.MainMenu(section=section).pack()\
+                )
 
 rp_marcups = ReplyMarcups()
 

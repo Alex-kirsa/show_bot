@@ -15,7 +15,8 @@ from config.settings import BOT_TOKEN
 from messages import MESSAGES
 from database import db
 
-from state_machine import MailingForm
+from google_sheets.gspred import gs, SPREADSHEET_URL
+from state_machine import MailingForm, WorkWithSheetsForm
 from reply_marcups import rp_marcups
 import callback_data as cb_data
 
@@ -119,13 +120,36 @@ async def user_info_callback(query: CallbackQuery, callback_data:cb_data.MainMen
     lang = db.get_language_by_id(query.from_user.id)
     await query.message.delete()
     await query.message.answer(\
-        text=MESSAGES["MAIN_MENU"]["USER_INFO"]["ALL_INFO_I_OWE"][lang])
+        text=MESSAGES["MAIN_MENU"]["USER_INFO"]["ALL_INFO_I_OWE"][lang],\
+        reply_markup=rp_marcups.chosen_language_marcup(lang))
     l = [el for el in query.from_user]
     l1 = list()
     for i in range(len(l)):
         l1.append(f"{l[i][0]}: {l[i][1]}")
     await query.message.answer(text="\n".join(l1))
 
+
+
+@sheets.callback_query(cb_data.MainMenu.filter(F.section=="GOOGLE_SHEETS_WORK"))
+async def work_with_sheets(query: CallbackQuery, state:FSMContext):
+    lang = db.get_language_by_id(query.from_user.id)
+    await query.message.delete()
+    await query.message.answer(MESSAGES["MAIN_MENU"]["GOOGLE_SHEETS_WORK"]["SEND_ME_MESSAGE"][lang])
+    
+    await state.set_state(WorkWithSheetsForm.message)
+
+@sheets.message(WorkWithSheetsForm.message)
+async def work_with_sheets(message: Message, state:FSMContext):
+    lang = db.get_language_by_id(message.from_user.id)
+    try:
+        count = len(gs.wks.get_all_values())
+        gs.wks.insert_row([count-1, message.text], index=count+1)
+
+        await message.answer(MESSAGES["MAIN_MENU"]["GOOGLE_SHEETS_WORK"]["I_HAVE_ENTERED_MESSAGE"][lang]%(count-1, SPREADSHEET_URL),\
+                             reply_markup=rp_marcups.chosen_language_marcup(lang))
+        await state.clear()
+    except:
+        await message.answer(MESSAGES["MAIN_MENU"]["GOOGLE_SHEETS_WORK"]["SEND_ME_MESSAGE"][lang])
 
 
 @empty.message()

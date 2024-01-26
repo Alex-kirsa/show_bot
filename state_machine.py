@@ -4,4 +4,5 @@ class MailingForm(StatesGroup):
     delay = State()
 
 
-    
+class WorkWithSheetsForm(StatesGroup):
+    message = State()
