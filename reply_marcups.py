@@ -40,7 +40,7 @@ class ReplyMarcups:
     def site_job_marcup(self, lang:str):
         button = InlineKeyboardButton(\
                     text=MESSAGES["MAIN_MENU"]["SITE_JOB"]["FILL_THE_FORM"][lang],\
-                    web_app=WebAppInfo(url="https://shorturl.at/isBOV"),\
+                    web_app=WebAppInfo(url="https://chimerical-axolotl-a80fde.netlify.app/"),\
                 )
 
         return InlineKeyboardMarkup(inline_keyboard=[[button]])

@@ -8,8 +8,11 @@ from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
+from aiogram.types.web_app_data import WebAppData
+from aiogram.methods.answer_web_app_query import AnswerWebAppQuery
 from aiogram.utils.markdown import hbold
 from aiogram.fsm.context import FSMContext
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
 from config.settings import BOT_TOKEN
@@ -219,13 +222,17 @@ async def echo_handler(message: types.Message) -> None:
 
 
 
-async def send_message(request):
+#@dp.web(WebAppData())
+async def web_send_message(request):
+    print("АГНПУПЕГНЦАнпегуамцпцук")
     try:
         data = await request.json()
         chat_id = data.get('chatId')
         # Якщо chat_id не задано, ви можете встановити значення за замовчуванням або повернути помилку
         if chat_id is None:
             return web.Response(status=400, text="chatId is required")
+        
+        print("АГНПУПЕГНЦАнпегуамцпцук")
 
         await bot.send_message(chat_id, 'Це повідомлення надіслано від бота після натискання кнопки у веб-додатку.')
         return web.Response(status=200)
@@ -239,14 +246,24 @@ async def main() -> None:
 
 
 app = web.Application()
-app.add_routes([web.post('/send-message', send_message)])
+#app["bot"] = bot
+#app["dispatcher"] = dp
+#app.add_routes([web.post('/send-message', web_send_message)])
+SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+    ).register(app, path="/send-message")
+#setup_application(app, dp, bot=bot)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     try:
+        #loop = asyncio.new_event_loop()
+        #loop.create_task()
+        #web.run_app(app, host="127.0.0.1", port=8080)
         asyncio.run(main())
-        web.run_app(app, port=8080)
+        
     except:
         pass
 
