@@ -16,7 +16,7 @@ from messages import MESSAGES
 from database import db
 
 from google_sheets.gspred import gs, SPREADSHEET_URL
-from state_machine import MailingForm, WorkWithSheetsForm
+from state_machine import MailingForm, WorkWithSheetsForm, MessageAnalysisForm
 from reply_marcups import rp_marcups
 import callback_data as cb_data
 
@@ -25,11 +25,11 @@ site_job = Router()
 mailing:Router = Router()
 user_info = Router()
 sheets = Router()
-analysis = Router()
+message_analysis = Router()
 empty = Router()
 
 dp = Dispatcher()
-dp.include_routers(site_job, mailing, user_info, sheets, analysis, empty)
+dp.include_routers(site_job, mailing, user_info, sheets, message_analysis, empty)
 
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 
@@ -152,12 +152,38 @@ async def work_with_sheets(message: Message, state:FSMContext):
         await message.answer(MESSAGES["MAIN_MENU"]["GOOGLE_SHEETS_WORK"]["SEND_ME_MESSAGE"][lang])
 
 
+
+@message_analysis.callback_query(cb_data.MainMenu.filter(F.section=="MESSAGE_ANALYSIS"))
+async def message_analysis_callback(query: CallbackQuery, state:FSMContext):
+    lang = db.get_language_by_id(query.from_user.id)
+    await query.message.delete()
+    await state.set_state(MessageAnalysisForm.message)
+    await query.message.answer(MESSAGES["MAIN_MENU"]["MESSAGE_ANALYSIS"]["SEND_ME_MESSAGE"][lang])
+    
+    await state.set_state(MessageAnalysisForm.message)
+
+@message_analysis.message(MessageAnalysisForm.message)
+async def message_analysis_handlen(message: types.Message, state:FSMContext) -> None:
+    lang = db.get_language_by_id(message.from_user.id)
+    l = list()
+    for el in message:
+        if len(el)==2:
+            if type(el[1])!=type(message.sender_chat):
+                l.append(el[0])
+    await state.clear()
+    #await message.send_copy(chat_id=message.chat.id)
+    await message.answer(MESSAGES["MAIN_MENU"]["MESSAGE_ANALYSIS"]["YOU_SENT_ME"][lang]%(l[4]),\
+                         reply_markup=rp_marcups.chosen_language_marcup(lang))
+
+
+
 @empty.message()
 async def echo_handler(message: types.Message) -> None:
-    try:
-        await message.send_copy(chat_id=message.chat.id)
-    except TypeError:
-        await message.answer("Nice try!")
+    #try:
+    await message.send_copy(chat_id=message.chat.id)
+    #await message.answer()
+    #except TypeError:
+    #    await message.answer("Nice try!")
 
 
 async def main() -> None:

@@ -11,8 +11,6 @@ class GoogleSheets:
         self.sh = self.gc.open_by_key(SPREADSHEET_ID)
         self.wks = self.sh.get_worksheet(0)
 
-        ic(self.wks.get_all_values())
-
     def count_column_values(self):
         return self.wks.row_count-1
     
@@ -22,7 +20,3 @@ gs = GoogleSheets()
 
 
 
-
-
-
-#ic(sh.sheet1.get('A1'))

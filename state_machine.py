@@ -6,3 +6,7 @@ class MailingForm(StatesGroup):
 
 class WorkWithSheetsForm(StatesGroup):
     message = State()
+
+
+class MessageAnalysisForm(StatesGroup):
+    message = State()
