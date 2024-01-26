@@ -10,6 +10,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 from aiogram.fsm.context import FSMContext
+from aiohttp import web
 
 from config.settings import BOT_TOKEN
 from messages import MESSAGES
@@ -26,10 +27,12 @@ mailing:Router = Router()
 user_info = Router()
 sheets = Router()
 message_analysis = Router()
+get_info_gs = Router()
+special_abilities = Router()
 empty = Router()
 
 dp = Dispatcher()
-dp.include_routers(site_job, mailing, user_info, sheets, message_analysis, empty)
+dp.include_routers(site_job, mailing, user_info, sheets, message_analysis, get_info_gs, special_abilities, empty)
 
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 
@@ -108,14 +111,14 @@ async def mailing_get_message(message:Message, state:FSMContext):
         if((1<=int(message.text)) and (int(message.text)<=60)):
             await asyncio.sleep(int(message.text))
             data = await state.get_data()
+            await message.answer(\
+                MESSAGES["MAIN_MENU"]["MAILING"]["SHOW_RESULT"][lang]%message.text,\
+                reply_markup=rp_marcups.chosen_language_marcup(lang)\
+            )
             await bot.copy_message(\
                 chat_id=message.from_user.id,\
                 from_chat_id=message.from_user.id,\
                 message_id=data["message_id"]\
-            )
-            await message.answer(\
-                MESSAGES["MAIN_MENU"]["MAILING"]["SHOW_RESULT"][lang]%message.text,\
-                reply_markup=rp_marcups.chosen_language_marcup(lang)\
             )
             await state.clear()
         else:
@@ -173,7 +176,7 @@ async def message_analysis_callback(query: CallbackQuery, state:FSMContext):
     await state.set_state(MessageAnalysisForm.message)
 
 @message_analysis.message(MessageAnalysisForm.message)
-async def message_analysis_handlen(message: types.Message, state:FSMContext) -> None:
+async def message_analysis_handler(message: Message, state:FSMContext) -> None:
     lang = db.get_language_by_id(message.from_user.id)
     l = list()
     for el in message:
@@ -187,23 +190,63 @@ async def message_analysis_handlen(message: types.Message, state:FSMContext) -> 
 
 
 
+@get_info_gs.callback_query(cb_data.MainMenu.filter(F.section=="GET_VALUES_FROM_GS"))
+async def get_info_gs_query(query: CallbackQuery):
+    lang = db.get_language_by_id(query.from_user.id)
+    await query.message.delete()
+    values = gs.wks.get_all_values()
+    text = '\n'.join(['. '.join(item) for item in values])
+    text += "\n"+MESSAGES["MAIN_MENU"]["GET_VALUES_FROM_GS"]["LINK_TO_SPREADSHEET"][lang]%SPREADSHEET_URL
+    await query.message.answer(text)
+
+
+
+@special_abilities.callback_query(cb_data.MainMenu.filter(F.section=="SPECIAL_ABILITIES"))
+async def special_abilities_query(query: CallbackQuery):
+    lang = db.get_language_by_id(query.from_user.id)
+    #await query.message.delete()
+    for i in range(len(MESSAGES["MAIN_MENU"]["SPECIAL_ABILITIES"])+1):
+        await query.message.edit_text(MESSAGES["MAIN_MENU"]["SPECIAL_ABILITIES"]["MESSAGES"][f"MES_{i}"][lang])
+        await asyncio.sleep(2.5)
+    await query.message.delete()
+
+
+
 @empty.message()
 async def echo_handler(message: types.Message) -> None:
-    #try:
-    await message.send_copy(chat_id=message.chat.id)
-    #await message.answer()
-    #except TypeError:
-    #    await message.answer("Nice try!")
+    lang = db.get_language_by_id(message.from_user.id)
+    await message.answer(MESSAGES["START_MESSAGE"]["PRESS_START_TO_START"][lang])
+
+
+
+async def send_message(request):
+    try:
+        data = await request.json()
+        chat_id = data.get('chatId')
+        # Якщо chat_id не задано, ви можете встановити значення за замовчуванням або повернути помилку
+        if chat_id is None:
+            return web.Response(status=400, text="chatId is required")
+
+        await bot.send_message(chat_id, 'Це повідомлення надіслано від бота після натискання кнопки у веб-додатку.')
+        return web.Response(status=200)
+    except Exception as e:
+        return web.Response(status=500, text=str(e))
+
 
 
 async def main() -> None:
     await dp.start_polling(bot)
 
 
+app = web.Application()
+app.add_routes([web.post('/send-message', send_message)])
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     try:
         asyncio.run(main())
+        web.run_app(app, port=8080)
     except:
         pass
 
