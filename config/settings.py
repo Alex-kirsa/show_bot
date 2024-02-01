@@ -1,6 +1,5 @@
 import os
 import dotenv
-
 DEBUG = True
 
 dotenv.load_dotenv()

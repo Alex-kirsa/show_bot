@@ -4,16 +4,21 @@ import sys
 
 from icecream import ic
 
+from aiohttp import web
+from aiohttp.web_request import Request
+from aiohttp.web_response import json_response
+
 from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart, Command
+from aiogram.enums.content_type import ContentType
+from aiogram.filters import CommandStart, Command, MagicData
 from aiogram.types import Message, CallbackQuery
-from aiogram.types.web_app_data import WebAppData
 from aiogram.methods.answer_web_app_query import AnswerWebAppQuery
 from aiogram.utils.markdown import hbold
+from aiogram.utils.web_app import safe_parse_webapp_init_data, WebAppInitData
 from aiogram.fsm.context import FSMContext
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
+
 
 from config.settings import BOT_TOKEN
 from messages import MESSAGES
@@ -215,6 +220,21 @@ async def special_abilities_query(query: CallbackQuery):
 
 
 
+@dp.message(content_types=types.ContentType.WEB_APP_DATA)
+async def web_send_message(request):
+    print("HGRFHRSBVFGHBSRF")
+    bot: Bot = request.app["bot"]
+
+    data = await request.post()  # application/x-www-form-urlencoded
+    try:
+        data = safe_parse_webapp_init_data(token=bot.token, init_data=data["/send_message"])
+    except ValueError:
+        return json_response({"ok": False, "err": "Unauthorized"}, status=401)
+    ic(json_response({"ok": True, "data": data.user.dict()}))
+    asyncio.sleep(0)
+
+
+
 @empty.message()
 async def echo_handler(message: types.Message) -> None:
     lang = db.get_language_by_id(message.from_user.id)
@@ -222,47 +242,33 @@ async def echo_handler(message: types.Message) -> None:
 
 
 
-#@dp.web(WebAppData())
-async def web_send_message(request):
-    print("АГНПУПЕГНЦАнпегуамцпцук")
-    try:
-        data = await request.json()
-        chat_id = data.get('chatId')
-        # Якщо chat_id не задано, ви можете встановити значення за замовчуванням або повернути помилку
-        if chat_id is None:
-            return web.Response(status=400, text="chatId is required")
-        
-        print("АГНПУПЕГНЦАнпегуамцпцук")
-
-        await bot.send_message(chat_id, 'Це повідомлення надіслано від бота після натискання кнопки у веб-додатку.')
-        return web.Response(status=200)
-    except Exception as e:
-        return web.Response(status=500, text=str(e))
-
-
-
 async def main() -> None:
     await dp.start_polling(bot)
 
 
-app = web.Application()
+
+#app = web.Application()
 #app["bot"] = bot
 #app["dispatcher"] = dp
 #app.add_routes([web.post('/send-message', web_send_message)])
-SimpleRequestHandler(
-        dispatcher=dp,
-        bot=bot,
-    ).register(app, path="/send-message")
+#SimpleRequestHandler(
+#        dispatcher=dp,
+#        bot=bot,
+#    ).register(app, path="/send-message")
 #setup_application(app, dp, bot=bot)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    loop = asyncio.new_event_loop()
+    #asyncio.run(loop.create_task(web_send_message()))
     try:
+    
         #loop = asyncio.new_event_loop()
         #loop.create_task()
         #web.run_app(app, host="127.0.0.1", port=8080)
-        asyncio.run(main())
+        #asyncio.run(bot.set_webhook(url="https://chimerical-axolotl-a80fde.netlify.app/"))
+        asyncio.run(loop.create_task(main()))
         
     except:
         pass
